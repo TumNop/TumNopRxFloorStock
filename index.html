@@ -3,353 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloorStock - ระบบตรวจเช็คยาหมดอายุ</title>
-    <!-- Tailwind CSS & FontAwesome Icons -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>🏥 Floorstock Expiry & Inventory System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
-    <!-- CONFIGURATION -->
-    <script>
-        // 🔗 วาง Web App URL ของ Apps Script ตรงนี้ครับ
-        const API_URL = "https://script.google.com/macros/s/AKfycbwfiADvA26XwL6-ld2mP-DoDc27xc6aCiwqa5wpaTDfoXuxpi1Kx8wwoL6O-tRW4lTA/exec";
-    </script>
+    <header class="bg-blue-600 text-white shadow-md p-5 text-center">
+        <h1 class="text-2xl font-bold">🏥 ระบบตรวจเช็คยาและเฝ้าระวังวันหมดอายุ (Floorstock)</h1>
+        <p class="text-sm opacity-90 mt-1">เวอร์ชันเชื่อมต่อ API หลังบ้านเสถียรสูง</p>
+    </header>
 
-    <!-- TOP NAVIGATION BAR -->
-    <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-prescription-bottle-medical text-2xl"></i>
-                    <span class="font-bold text-lg tracking-wider">🏥 FloorStock Sadao Hospital</span>
-                </div>
-                <div class="flex space-x-2 text-sm">
-                    <button onclick="switchTab('dashboard')" class="tab-btn px-3 py-2 rounded-md bg-blue-700 font-medium">Dashboard</button>
-                    <button onclick="switchTab('inspection')" class="tab-btn px-3 py-2 rounded-md hover:bg-blue-500 transition">ตรวจเช็คยา</button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- MAIN CONTAINER -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto p-4 lg:p-6 space-y-8">
         
-        <!-- ================= TAB: DASHBOARD ================= -->
-        <section id="tab-dashboard" class="tab-content space-y-8">
-            <!-- Summary Widgets -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">รายการยาทั้งหมด</p>
-                        <h3 id="widget-total-drugs" class="text-2xl font-bold mt-1">...</h3>
-                    </div>
-                    <i class="fa-solid fa-pills text-blue-500 text-2xl"></i>
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-blue-600 mb-4 flex items-center gap-2">
+                📝 ฟอร์มบันทึกการตรวจเช็คยาประจำตู้
+            </h2>
+            <form id="inspectionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">หอผู้ป่วย / หออภิบาล (Ward)</label>
+                    <input type="text" id="ward" required placeholder="เช่น ICU, Ward3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">หมดอายุแล้ว 🔴</p>
-                        <h3 id="widget-expired" class="text-2xl font-bold mt-1 text-red-600">...</h3>
-                    </div>
-                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-2xl"></i>
+                <div>
+                    <label class="block text-sm font-medium mb-1">รหัสยา (Drug ID)</label>
+                    <input type="text" id="drugId" required placeholder="เช่น DRG001" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">วิกฤต (<=30 วัน) 🟠</p>
-                        <h3 id="widget-critical" class="text-2xl font-bold mt-1 text-orange-600">...</h3>
-                    </div>
-                    <i class="fa-solid fa-hourglass-half text-orange-500 text-2xl"></i>
+                <div>
+                    <label class="block text-sm font-medium mb-1">เลขล็อตการผลิต (Lot Number)</label>
+                    <input type="text" id="lotNumber" required placeholder="เช่น LOT1234" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">ใกล้หมดอายุ (<=90 วัน) 🟡</p>
-                        <h3 id="widget-warning" class="text-2xl font-bold mt-1 text-yellow-600">...</h3>
-                    </div>
-                    <i class="fa-solid fa-bell text-yellow-500 text-2xl"></i>
+                <div>
+                    <label class="block text-sm font-medium mb-1">วันหมดอายุ (Expiry Date)</label>
+                    <input type="date" id="expiryDate" required class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
-            </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">จำนวนคงเหลือในตู้ (Quantity)</label>
+                    <input type="number" id="quantity" required min="0" placeholder="0" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">ชื่อผู้ตรวจเช็ค (Checker)</label>
+                    <input type="text" id="checker" required placeholder="ชื่อ-นามสกุลพยาบาล" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="md:col-span-2 lg:col-span-3 flex justify-end mt-2">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadowTransition transition duration-200">
+                        💾 บันทึกข้อมูลเข้าคลัง
+                    </button>
+                </div>
+            </form>
+        </section>
 
-            <!-- Charts & Analytics -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-md font-bold mb-4 flex items-center"><i class="fa-solid fa-chart-pie mr-2 text-blue-500"></i> สัดส่วนสถานะยาในคลังหอผู้ป่วย</h3>
-                    <div class="relative h-64 flex justify-center">
-                        <canvas id="chartExpiryStatus"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 class="text-md font-bold mb-4 flex items-center"><i class="fa-solid fa-boxes-stacked mr-2 text-emerald-500"></i> สรุปยอดคงเหลือรายยา (Monthly Stock)</h3>
-                    <div class="relative h-64">
-                        <canvas id="chartMonthlyStock"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Urgent Alerts Table -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                    <h3 class="font-bold flex items-center text-gray-700"><i class="fa-solid fa-circle-exclamation mr-2 text-red-500 animate-pulse"></i> รายการแจ้งเตือนความเสี่ยงวันหมดอายุ</h3>
-                    <button onclick="loadDashboardData()" class="text-sm text-blue-600 hover:underline"><i class="fa-solid fa-rotate mr-1"></i> รีเฟรช</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 text-xs uppercase text-gray-600 font-semibold border-b border-gray-200">
-                                <th class="p-4">หอผู้ป่วย</th>
-                                <th class="p-4">รหัสยา</th>
-                                <th class="p-4">Lot Number</th>
-                                <th class="p-4">วันหมดอายุ</th>
-                                <th class="p-4 text-center">จำนวนคงเหลือ</th>
-                                <th class="p-4">สถานะแจ้งเตือน</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-alerts-body" class="text-sm divide-y divide-gray-100">
-                            <tr><td colspan="6" class="p-4 text-center text-gray-400">กำลังโหลดข้อมูลแจ้งเตือนความเสี่ยง...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+                🚨 รายการยาเฝ้าระวังความเสี่ยง (Expiry Alerts)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-sm border-b">
+                            <th class="p-3">หอผู้ป่วย</th>
+                            <th class="p-3">รหัสยา</th>
+                            <th class="p-3">เลขล็อต</th>
+                            <th class="p-3">วันหมดอายุ</th>
+                            <th class="p-3 text-center">จำนวนคงเหลือ</th>
+                            <th class="p-3">สถานะประเมิน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertTableBody" class="divide-y text-sm">
+                        <tr>
+                            <td colspan="6" class="p-4 text-center text-slate-400">กำลังโหลดข้อมูลแจ้งเตือนความเสี่ยง...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
-        <!-- ================= TAB: INSPECTION FORM ================= -->
-        <section id="tab-inspection" class="tab-content hidden max-w-xl mx-auto">
-            <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-                    <h3 class="font-bold text-lg flex items-center"><i class="fa-solid fa-clipboard-check mr-2"></i> ฟอร์มบันทึกการตรวจเช็คยาประจำงวด</h3>
-                    <p class="text-xs text-blue-100 mt-1">ข้อมูลจะถูกส่งไปบันทึกลง Google Sheets และคำนวณวันหมดอายุอัตโนมัติ</p>
-                </div>
-                <form id="form-inspection" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">หอผู้ป่วย (Ward)</label>
-                        <select id="form-ward" required class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm">
-                            <option value="">-- เลือกหอผู้ป่วย --</option>
-                            <option value="Ward 3A">Ward ชั้น1 (ผู้ป่วยในหญิง)</option>
-                            <option value="Ward 3B">Ward ชั้น2 (ผู้ป่วยในชาย)</option>
-                            <option value="ICU">ICU (ผู้ป่วยวิกฤต)</option>
-                            <option value="ER">ER (อุบัติเหตุและฉุกเฉิน)</option>
-                            <option value="Ward ชั้น4">Ward ชั้น4 (พิเศษชั้น4)</option> 
-                            <option value="LR">LR (ห้องคลอด)</option>
-                            <option value="PP">PP (หลังคลอด/นรีเวช)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">รายการยา (Drug Master)</label>
-                        <select id="form-drug" required class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm">
-                            <option value="">-- กำลังโหลดรายยามอนิเตอร์... --</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">เลขที่ผลิต (Lot Number)</label>
-                            <input type="text" id="form-lot" required placeholder="เช่น LOT6701" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">จำนวนยาคงเหลือ ณ วันตรวจ</label>
-                            <input type="number" id="form-qty" required min="0" placeholder="0" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">วันหมดอายุของล็อตนี้ (Expiry Date)</label>
-                        <input type="date" id="form-expiry" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">ชื่อผู้ตรวจเช็คข้อมูล</label>
-                        <input type="text" id="form-checker" required placeholder="ชื่อ-นามสกุล พยาบาล/เจ้าหน้าที่" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                    </div>
-                    <button type="submit" id="btn-submit" class="w-full mt-2 bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:bg-blue-700 transition flex items-center justify-center space-x-2 cursor-pointer">
-                        <i class="fa-solid fa-paper-plane"></i>
-                        <span>ส่งบันทึกข้อมูลเข้า Google Sheets</span>
-                    </button>
-                </form>
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-emerald-600 mb-4 flex items-center gap-2">
+                📊 รายงานยอดคงเหลือล่าสุดรายตู้ประจำหอผู้ป่วย (Latest Stock Summary)
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-sm border-b">
+                            <th class="p-3">หอผู้ป่วย (Ward)</th>
+                            <th class="p-3">รหัสยา (Drug ID)</th>
+                            <th class="p-3">เลขล็อต (Lot Number)</th>
+                            <th class="p-3 text-center">ยอดคงเหลือล่าสุด</th>
+                            <th class="p-3 text-center">มีเคสวิกฤต/หมดอายุ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody" class="divide-y text-sm">
+                        <tr>
+                            <td colspan="5" class="p-4 text-center text-slate-400">กำลังโหลดตารางสรุปข้อมูลรายตู้...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>
 
-    <!-- ================= JAVASCRIPT ARCHITECTURE ================= -->
     <script>
-        let statusChartInstance = null;
-        let stockChartInstance = null;
+        // 🚨 1. แก้ไขตรงนี้: วาง URL เว็บแอปที่ได้จากการ Deploy ใน Google Apps Script ของคุณ
+        const API_URL = "https://script.google.com/macros/s/AKfycbwfiADvA26XwL6-ld2mP-DoDc27xc6aCiwqa5wpaTDfoXuxpi1Kx8wwoL6O-tRW4lTA/exec"; 
 
-        // 1. ระบบควบคุมแท็บหน้าจอ (SPA Router)
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                if(btn.innerText.includes('Dashboard') && tabName === 'dashboard' || btn.innerText.includes('ตรวจเช็ค') && tabName === 'inspection') {
-                    btn.classList.add('bg-blue-700');
-                    btn.classList.remove('hover:bg-blue-500');
-                } else {
-                    btn.classList.remove('bg-blue-700');
-                    btn.classList.add('hover:bg-blue-500');
-                }
-            });
+        // โหลดข้อมูลแสดงผลทันทีที่เปิดหน้าเว็บ
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchAlerts();
+            fetchSummary();
+        });
 
-            if (tabName === 'dashboard') loadDashboardData();
-        }
-
-        // 2. ดึงข้อมูลตัวเลือกยาจากฐานข้อมูล Drug_Master
-        async function loadDrugMaster() {
-            try {
-                const response = await fetch(`${API_URL}?action=getDrugs`);
-                const result = await response.json();
-                if(result.status === "success") {
-                    const select = document.getElementById('form-drug');
-                    select.innerHTML = '<option value="">-- เลือกรายการยา --</option>';
-                    result.data.forEach(drug => {
-                        select.innerHTML += `<option value="${drug.DrugID}">${drug.DrugName} (${drug.Strength}) [${drug.Unit}]</option>`;
-                    });
-                }
-            } catch (err) {
-                console.error("Error loading drugs master:", err);
-            }
-        }
-
-        // 3. ดึงข้อมูลเพื่อนำมาประมวลผลบน Dashboard และ กราฟ
-        async function loadDashboardData() {
-            try {
-                // ดึงข้อมูลการแจ้งเตือน
-                const alertRes = await fetch(`${API_URL}?action=getAlerts`);
-                const alertData = await alertRes.json();
-                
-                // ดึงข้อมูลสรุปยอดคงเหลือรายเดือน
-                const summaryRes = await fetch(`${API_URL}?action=getMonthlySummary`);
-                const summaryData = await summaryRes.json();
-
-                if (alertData.status === "success" && summaryData.status === "success") {
-                    renderDashboard(alertData.data, summaryData.data);
-                }
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ API Backend");
-            }
-        }
-
-        // 4. Render ตัวชี้วัด และแผนภูมิอัจฉริยะ (Charts)
-        function renderDashboard(alerts, summary) {
-            // สรุปสถิติสถานะ
-            let expired = 0, critical = 0, warning = 0, notice = 0, normal = 0;
-            let tableHtml = "";
-
-            alerts.forEach(item => {
-                if (item.Status.includes("🔴")) expired++;
-                else if (item.Status.includes("🟠")) critical++;
-                else if (item.Status.includes("🟡")) warning++;
-                else if (item.Status.includes("🔵")) notice++;
-                else normal++;
-
-                let badgeColor = "bg-green-100 text-green-800";
-                if(item.Status.includes("🔴")) badgeColor = "bg-red-100 text-red-800 animate-pulse font-bold";
-                else if(item.Status.includes("🟠")) badgeColor = "bg-orange-100 text-orange-800 font-bold";
-                else if(item.Status.includes("🟡")) badgeColor = "bg-yellow-100 text-yellow-800";
-                else if(item.Status.includes("🔵")) badgeColor = "bg-blue-100 text-blue-800";
-
-                tableHtml += `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-4 font-medium text-gray-900">${item.Ward}</td>
-                        <td class="p-4 text-gray-600">${item.DrugID}</td>
-                        <td class="p-4 font-mono text-xs">${item.LotNumber}</td>
-                        <td class="p-4 text-gray-600">${item.ExpiryDate}</td>
-                        <td class="p-4 text-center font-bold">${item.Quantity}</td>
-                        <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium ${badgeColor}">${item.Status}</span></td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('table-alerts-body').innerHTML = tableHtml || `<tr><td colspan="6" class="p-4 text-center text-emerald-600 font-medium">🎉 ยอดเยี่ยม! ไม่พบยาที่ใกล้หมดอายุในระบบพยาบาลขณะนี้</td></tr>`;
-            
-            // อัปเดต Widgets
-            document.getElementById('widget-total-drugs').innerText = summary.length;
-            document.getElementById('widget-expired').innerText = expired;
-            document.getElementById('widget-critical').innerText = critical;
-            document.getElementById('widget-warning').innerText = warning;
-
-            // Render กราฟวงกลมแสดงสถานะ (Pie Chart)
-            if(statusChartInstance) statusChartInstance.destroy();
-            const ctxPie = document.getElementById('chartExpiryStatus').getContext('2d');
-            statusChartInstance = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: ['หมดอายุ 🔴', 'วิกฤต 🟠', 'ใกล้หมดอายุ 🟡', 'เฝ้าระวัง 🔵'],
-                    datasets: [{
-                        data: [expired, critical, warning, notice],
-                        backgroundColor: ['#EF4444', '#F97316', '#EAB308', '#3B82F6']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            // Render กราฟแท่งแสดงปริมาณยาคงเหลือรายเดือน (Bar Chart)
-            if(stockChartInstance) stockChartInstance.destroy();
-            const ctxBar = document.getElementById('chartMonthlyStock').getContext('2d');
-            stockChartInstance = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: summary.map(s => `${s.ward}-${s.drugId}`),
-                    datasets: [{
-                        label: 'จำนวนยาคงคลังรวม',
-                        data: summary.map(s => s.totalQty),
-                        backgroundColor: '#10B981'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        // 5. บันทึกข้อมูลการตรวจยา (POST Request)
-        async function handleFormSubmit(e) {
+        // 🟢 ฟังก์ชันส่งฟอร์มข้อมูลตรวจเช็คไปบันทึกหลังบ้าน (POST)
+        document.getElementById("inspectionForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>กำลังบันทึกข้อมูลเข้าฐานข้อมูล...</span>`;
-
+            
             const payload = {
                 action: "submitInspection",
                 data: {
-                    ward: document.getElementById('form-ward').value,
-                    drugId: document.getElementById('form-drug').value,
-                    lotNumber: document.getElementById('form-lot').value,
-                    quantity: document.getElementById('form-qty').value,
-                    expiryDate: document.getElementById('form-expiry').value,
-                    checker: document.getElementById('form-checker').value
+                    ward: document.getElementById("ward").value.trim(),
+                    drugId: document.getElementById("drugId").value.trim(),
+                    lotNumber: document.getElementById("lotNumber").value.trim(),
+                    expiryDate: document.getElementById("expiryDate").value,
+                    quantity: parseInt(document.getElementById("quantity").value) || 0,
+                    checker: document.getElementById("checker").value.trim()
                 }
             };
 
             try {
                 const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 
-        'Content-Type': 'text/plain;charset=utf-8' // เปลี่ยนเป็น text/plain เพื่อเลี่ยงการติด CORS ของ Apps Script
-    },
-    body: JSON.stringify(payload)
-});
-
-const result = await response.json(); // อ่านผลลัพธ์ที่ตอบกลับมาจาก Server
-if (result.status === "success" || result.status === true) {
-    alert("🚀 " + (result.message || "บันทึกข้อมูลสำเร็จ!"));
-    document.getElementById('form-inspection').reset();
-    switchTab('dashboard');
-} else {
-    alert("❌ เกิดข้อผิดพลาดจากระบบหลังบ้าน: " + result.message);
-}
+                    method: "POST",
+                    mode: "cors",
+                    headers: { "Content-Type": "text/plain" }, // ดักจับปัญหา CORS บน Apps Script
+                    body: JSON.stringify(payload)
+                });
                 
-                alert("🚀 บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว! (หมายเหตุ: สัญญาณส่งข้อมูลแบบ Async สำเร็จ)");
-                document.getElementById('form-inspection').reset();
-                switchTab('dashboard');
+                const result = await response.json();
+                if (result.status === "success") {
+                    alert("🎉 " + result.message);
+                    document.getElementById("inspectionForm").reset();
+                    // รีโหลดตารางข้อมูลใหม่ให้เป็นปัจจุบัน
+                    fetchAlerts();
+                    fetchSummary();
+                } else {
+                    alert("❌ เกิดข้อผิดพลาดจากระบบหลังบ้าน: " + result.message);
+                }
             } catch (err) {
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>ส่งบันทึกข้อมูลเข้า Google Sheets</span>`;
+                console.error(err);
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ API Backend กรุณาตรวจสอบสิทธิ์การตั้งค่าเป็น Everyone บน Apps Script");
+            }
+        });
+
+        // 🔵 ฟังก์ชันดึงรายงานแจ้งเตือนวันหมดอายุ (GET Alerts)
+        async function fetchAlerts() {
+            const tbody = document.getElementById("alertTableBody");
+            try {
+                const response = await fetch(`${API_URL}?action=getAlerts`);
+                const result = await response.json();
+                
+                if (result.status === "success" && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(row => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 font-medium">${row.ward || row.Ward || '-'}</td>
+                            <td class="p-3 text-blue-600">${row.drugid || row.drugId || row.DrugID || '-'}</td>
+                            <td class="p-3 text-slate-500">${row.lotnumber || row.lotNumber || row.LotNumber || '-'}</td>
+                            <td class="p-3">${row.expirydate || row.expiryDate || row.ExpiryDate || '-'}</td>
+                            <td class="p-3 text-center font-bold text-amber-600">${row.totalqty || row.quantity || row.Quantity || 0}</td>
+                            <td class="p-3 font-semibold">${row.status || row.Status || '-'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-emerald-600 font-medium">🟢 ยอดเยี่ยม! ไม่มียาที่เสี่ยงต่อการหมดอายุในคลังค้างอยู่</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-medium">⚠️ ไม่สามารถเชื่อมต่อตารางแจ้งเตือนความเสี่ยงได้</td></tr>`;
             }
         }
 
-        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บครั้งแรก
-        window.onload = function() {
-            loadDrugMaster();
-            loadDashboardData();
-        };
+        // 🔵 ฟังก์ชันดึงตารางสรุปยอดคงเหลือปัจจุบันรายตู้ (GET Summary)
+        async function fetchSummary() {
+            const tbody = document.getElementById("summaryTableBody");
+            try {
+                const response = await fetch(`${API_URL}?action=getMonthlySummary`);
+                const result = await response.json();
+                
+                if (result.status === "success" && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map(item => `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 font-medium">${item.ward || '-'}</td>
+                            <td class="p-3 text-slate-700">${item.drugId || '-'}</td>
+                            <td class="p-3 text-slate-500">${item.lotNumber || '-'}</td>
+                            <td class="p-3 text-center font-bold">${item.totalQty || 0}</td>
+                            <td class="p-3 text-center">${item.isCritical === 1 ? '🔴 วิกฤต/หมดอายุ' : '✅ ปกติ'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">📊 ยังไม่มีข้อมูลการตรวจเช็คบันทึกเข้ามาในเดือนนี้</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-medium">⚠️ ไม่สามารถเชื่อมต่อตารางรายงานสรุปผลได้</td></tr>`;
+            }
+        }
     </script>
 </body>
 </html>
