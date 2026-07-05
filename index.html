@@ -10,7 +10,7 @@
 
     <header class="bg-blue-600 text-white shadow-md p-5 text-center">
         <h1 class="text-2xl font-bold">🏥 ระบบตรวจเช็คยาและเฝ้าระวังวันหมดอายุ (Floorstock)</h1>
-        <p class="text-sm opacity-90 mt-1">เวอร์ชันเชื่อมต่อ API หลังบ้านเสถียรสูง (Dropdown อัตโนมัติ)</p>
+        <p class="text-sm opacity-90 mt-1">เวอร์ชันเชื่อมต่อ API หลังบ้านเสถียรสูง (แสดงผลชื่อยาพร้อมระบบแจ้งเตือน)</p>
     </header>
 
     <main class="max-w-7xl mx-auto p-4 lg:p-6 space-y-8">
@@ -24,7 +24,7 @@
                     <label class="block text-sm font-medium mb-1">หอผู้ป่วย / หออภิบาล (Ward)</label>
                     <select id="ward" required class="w-full p-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
                         <option value="" disabled selected>-- เลือกหอผู้ป่วย --</option>
-                        </select>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">รายการยา (Drug ID & Name)</label>
@@ -65,8 +65,7 @@
                     <thead>
                         <tr class="bg-slate-100 text-slate-600 text-sm border-b">
                             <th class="p-3">หอผู้ป่วย</th>
-                            <th class="p-3">รหัสยา</th>
-                            <th class="p-3">เลขล็อต</th>
+                            <th class="p-3">รายการยา (รหัส : ชื่อยา)</th> <th class="p-3">เลขล็อต</th>
                             <th class="p-3">วันหมดอายุ</th>
                             <th class="p-3 text-center">จำนวนคงเหลือ</th>
                             <th class="p-3">สถานะประเมิน</th>
@@ -83,15 +82,14 @@
 
         <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <h2 class="text-lg font-semibold text-emerald-600 mb-4 flex items-center gap-2">
-                📊 รายงานยอดคงเหลือล่าสุดรายตู้ประจำหอผู้ป่วย (Latest Stock Summary)
+                📊 รายรายงานยอดคงเหลือล่าสุดรายตู้ประจำหอผู้ป่วย (Latest Stock Summary)
             </h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-100 text-slate-600 text-sm border-b">
                             <th class="p-3">หอผู้ป่วย (Ward)</th>
-                            <th class="p-3">รหัสยา (Drug ID)</th>
-                            <th class="p-3">เลขล็อต (Lot Number)</th>
+                            <th class="p-3">รายการยา (รหัส : ชื่อยา)</th> <th class="p-3">เลขล็อต (Lot Number)</th>
                             <th class="p-3 text-center">ยอดคงเหลือล่าสุด</th>
                             <th class="p-3 text-center">มีเคสวิกฤต/หมดอายุ</th>
                         </tr>
@@ -146,8 +144,9 @@
                 if (result.status === "success" && result.data.length > 0) {
                     drugSelect.innerHTML = '<option value="" disabled selected>-- เลือกรายการยา --</option>';
                     result.data.forEach(drug => {
-                        const id = drug.drugid || drug.drugId || drug.DrugID;
-                        const name = drug.drugname || drug.drugName || drug.DrugName || "";
+                        // หลังบ้านใช้ getSheetData ซึ่งจะแปลงหัวตารางเป็นตัวพิมพ์เล็กทั้งหมด
+                        const id = drug.drugid || drug.id;
+                        const name = drug.drugname || drug.name || "";
                         
                         if (id) {
                             const opt = document.createElement("option");
@@ -212,20 +211,32 @@
                 const result = await response.json();
                 
                 if (result.status === "success" && result.data.length > 0) {
-                    tbody.innerHTML = result.data.map(row => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="p-3 font-medium">${row.ward || row.Ward || '-'}</td>
-                            <td class="p-3 text-blue-600">${row.drugid || row.drugId || row.DrugID || '-'}</td>
-                            <td class="p-3 text-slate-500">${row.lotnumber || row.lotNumber || row.LotNumber || '-'}</td>
-                            <td class="p-3">${row.expirydate || row.expiryDate || row.ExpiryDate || '-'}</td>
-                            <td class="p-3 text-center font-bold text-amber-600">${row.totalqty || row.quantity || row.Quantity || 0}</td>
-                            <td class="p-3 font-semibold">${row.status || row.Status || '-'}</td>
-                        </tr>
-                    `).join('');
+                    tbody.innerHTML = result.data.map(row => {
+                        // ดึงค่าตาม Key พิมพ์เล็กที่ส่งมาจากเวอร์ชันแก้ไขของหลังบ้าน
+                        const ward = row.ward || "-";
+                        const id = row.drugId || row.drugid || "-";
+                        const name = row.drugName || row.drugname || "";
+                        const lot = row.lotNumber || row.lotnumber || "-";
+                        const expiry = row.expiryDate || row.expirydate || "-";
+                        const qty = row.totalQty || row.totalqty || 0;
+                        const status = row.status || "-";
+
+                        return `
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-medium">${ward}</td>
+                                <td class="p-3 text-blue-600 font-medium">${id} : <span class="text-slate-700 font-normal">${name}</span></td>
+                                <td class="p-3 text-slate-500">${lot}</td>
+                                <td class="p-3">${expiry}</td>
+                                <td class="p-3 text-center font-bold text-amber-600">${qty}</td>
+                                <td class="p-3 font-semibold">${status}</td>
+                            </tr>
+                        `;
+                    }).join('');
                 } else {
                     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-emerald-600 font-medium">🟢 ยอดเยี่ยม! ไม่มียาที่เสี่ยงต่อการหมดอายุในคลังค้างอยู่</td></tr>`;
                 }
             } catch (err) {
+                console.error(err);
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-medium">⚠️ ไม่สามารถเชื่อมต่อตารางแจ้งเตือนความเสี่ยงได้</td></tr>`;
             }
         }
@@ -238,19 +249,29 @@
                 const result = await response.json();
                 
                 if (result.status === "success" && result.data.length > 0) {
-                    tbody.innerHTML = result.data.map(item => `
-                        <tr class="hover:bg-slate-50">
-                            <td class="p-3 font-medium">${item.ward || '-'}</td>
-                            <td class="p-3 text-slate-700">${item.drugid || item.drugId || '-'}</td>
-                            <td class="p-3 text-slate-500">${item.lotnumber || item.lotNumber || '-'}</td>
-                            <td class="p-3 text-center font-bold">${item.totalqty || item.totalQty || 0}</td>
-                            <td class="p-3 text-center">${(item.iscritical === 1 || item.isCritical === 1) ? '🔴 วิกฤต/หมดอายุ' : '✅ ปกติ'}</td>
-                        </tr>
-                    `).join('');
+                    tbody.innerHTML = result.data.map(item => {
+                        const ward = item.ward || '-';
+                        const id = item.drugId || item.drugid || '-';
+                        const name = item.drugName || item.drugname || '';
+                        const lot = item.lotNumber || item.lotnumber || '-';
+                        const qty = item.totalQty || item.totalqty || 0;
+                        const isCritical = item.isCritical || item.iscritical;
+
+                        return `
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-medium">${ward}</td>
+                                <td class="p-3 text-slate-700 font-medium">${id} : <span class="text-slate-500 font-normal">${name}</span></td>
+                                <td class="p-3 text-slate-500">${lot}</td>
+                                <td class="p-3 text-center font-bold">${qty}</td>
+                                <td class="p-3 text-center">${isCritical === 1 ? '🔴 วิกฤต/หมดอายุ' : '✅ ปกติ'}</td>
+                            </tr>
+                        `;
+                    }).join('');
                 } else {
                     tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">📊 ยังไม่มีข้อมูลการตรวจเช็คบันทึกเข้ามาในเดือนนี้</td></tr>`;
                 }
             } catch (err) {
+                console.error(err);
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-medium">⚠️ ไม่สามารถเชื่อมต่อตารางรายงานสรุปผลได้</td></tr>`;
             }
         }
