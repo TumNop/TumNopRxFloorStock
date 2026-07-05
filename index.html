@@ -318,11 +318,21 @@
 
             try {
                 const response = await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // ตั้งค่าเพื่อรับส่งข้าม Domain สไตล์ Apps Script Web App
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'text/plain;charset=utf-8' // เปลี่ยนเป็น text/plain เพื่อเลี่ยงการติด CORS ของ Apps Script
+    },
+    body: JSON.stringify(payload)
+});
+
+const result = await response.json(); // อ่านผลลัพธ์ที่ตอบกลับมาจาก Server
+if (result.status === "success" || result.status === true) {
+    alert("🚀 " + (result.message || "บันทึกข้อมูลสำเร็จ!"));
+    document.getElementById('form-inspection').reset();
+    switchTab('dashboard');
+} else {
+    alert("❌ เกิดข้อผิดพลาดจากระบบหลังบ้าน: " + result.message);
+}
                 
                 alert("🚀 บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว! (หมายเหตุ: สัญญาณส่งข้อมูลแบบ Async สำเร็จ)");
                 document.getElementById('form-inspection').reset();
