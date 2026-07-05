@@ -10,7 +10,7 @@
 
     <header class="bg-blue-600 text-white shadow-md p-5 text-center">
         <h1 class="text-2xl font-bold">🏥 ระบบตรวจเช็คยาและเฝ้าระวังวันหมดอายุ (Floorstock)</h1>
-        <p class="text-sm opacity-90 mt-1">เวอร์ชันเชื่อมต่อ API หลังบ้านเสถียรสูง</p>
+        <p class="text-sm opacity-90 mt-1">เวอร์ชันเชื่อมต่อ API หลังบ้านเสถียรสูง (Dropdown อัตโนมัติ)</p>
     </header>
 
     <main class="max-w-7xl mx-auto p-4 lg:p-6 space-y-8">
@@ -22,11 +22,15 @@
             <form id="inspectionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium mb-1">หอผู้ป่วย / หออภิบาล (Ward)</label>
-                    <input type="text" id="ward" required placeholder="เช่น ICU, Ward3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <select id="ward" required class="w-full p-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="" disabled selected>-- เลือกหอผู้ป่วย --</option>
+                        </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">รหัสยา (Drug ID)</label>
-                    <input type="text" id="drugId" required placeholder="เช่น DRG001" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="block text-sm font-medium mb-1">รายการยา (Drug ID & Name)</label>
+                    <select id="drugId" required class="w-full p-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="" disabled selected>กำลังโหลดรายชื่อยาจากระบบ...</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">เลขล็อตการผลิต (Lot Number)</label>
@@ -45,7 +49,7 @@
                     <input type="text" id="checker" required placeholder="ชื่อ-นามสกุลพยาบาล" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div class="md:col-span-2 lg:col-span-3 flex justify-end mt-2">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadowTransition transition duration-200">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition duration-200">
                         💾 บันทึกข้อมูลเข้าคลัง
                     </button>
                 </div>
@@ -103,22 +107,73 @@
     </main>
 
     <script>
-        // 🚨 อย่าลืมตรวจสอบความถูกต้องของ URL หลังจากการ Deploy บน Apps Script อีกครั้ง
+        // 🚨 อย่าลืมตรวจสอบความถูกต้องของ URL หลังจากการ Deploy บน Apps Script อีกครั้งนะครับ
         const API_URL = "https://script.google.com/macros/s/AKfycbwfiADvA26XwL6-ld2mP-DoDc27xc6aCiwqa5wpaTDfoXuxpi1Kx8wwoL6O-tRW4lTA/exec"; 
 
+        // ⚙️ อัปเดตรายชื่อหอผู้ป่วยเวอร์ชันภาษาไทยตามที่กำหนด
+        const WARD_OPTIONS = [
+            "หอผู้ป่วยในหญิง ชั้น1",
+            "หอผู้ป่วยในชาย ชั้น2",
+            "หอผู้ป่วยพิเศษชั้น 4",
+            "หอผู้ป่วยหลังคลอด/นรีเวช PP"
+        ];
+
         document.addEventListener("DOMContentLoaded", () => {
+            initWardDropdown();
+            fetchDrugMaster(); 
             fetchAlerts();
             fetchSummary();
         });
 
+        // ฟังก์ชันสร้างตัวเลือกหอผู้ป่วย (Ward)
+        function initWardDropdown() {
+            const wardSelect = document.getElementById("ward");
+            WARD_OPTIONS.forEach(ward => {
+                const opt = document.createElement("option");
+                opt.value = ward;
+                opt.textContent = ward;
+                wardSelect.appendChild(opt);
+            });
+        }
+
+        // ฟังก์ชันดึงรายชื่อยาจากแท็บ Drug_Master มาสร้าง Dropdown อัตโนมัติ
+        async function fetchDrugMaster() {
+            const drugSelect = document.getElementById("drugId");
+            try {
+                const response = await fetch(`${API_URL}?action=getDrugs`);
+                const result = await response.json();
+                
+                if (result.status === "success" && result.data.length > 0) {
+                    drugSelect.innerHTML = '<option value="" disabled selected>-- เลือกรายการยา --</option>';
+                    result.data.forEach(drug => {
+                        const id = drug.drugid || drug.drugId || drug.DrugID;
+                        const name = drug.drugname || drug.drugName || drug.DrugName || "";
+                        
+                        if (id) {
+                            const opt = document.createElement("option");
+                            opt.value = id;
+                            opt.textContent = name ? `${id} : ${name}` : id;
+                            drugSelect.appendChild(opt);
+                        }
+                    });
+                } else {
+                    drugSelect.innerHTML = '<option value="" disabled>❌ ไม่พบข้อมูลยาใน Drug_Master</option>';
+                }
+            } catch (err) {
+                console.error(err);
+                drugSelect.innerHTML = '<option value="" disabled>❌ โหลดข้อมูลยาล้มเหลว</option>';
+            }
+        }
+
+        // 🟢 ฟังก์ชันส่งฟอร์มข้อมูลตรวจเช็คไปบันทึกหลังบ้าน (POST)
         document.getElementById("inspectionForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             
             const payload = {
                 action: "submitInspection",
                 data: {
-                    ward: document.getElementById("ward").value.trim(),
-                    drugId: document.getElementById("drugId").value.trim(),
+                    ward: document.getElementById("ward").value,
+                    drugId: document.getElementById("drugId").value,
                     lotNumber: document.getElementById("lotNumber").value.trim(),
                     expiryDate: document.getElementById("expiryDate").value,
                     quantity: parseInt(document.getElementById("quantity").value) || 0,
@@ -145,10 +200,11 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ API Backend กรุณาตรวจสอบสิทธิ์การตั้งค่าเป็น Everyone บน Apps Script");
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ API Backend");
             }
         });
 
+        // 🔵 ฟังก์ชันดึงรายงานแจ้งเตือนวันหมดอายุ (GET Alerts)
         async function fetchAlerts() {
             const tbody = document.getElementById("alertTableBody");
             try {
@@ -174,6 +230,7 @@
             }
         }
 
+        // 🔵 ฟังก์ชันดึงตารางสรุปยอดคงเหลือปัจจุบันรายตู้ (GET Summary)
         async function fetchSummary() {
             const tbody = document.getElementById("summaryTableBody");
             try {
