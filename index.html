@@ -103,16 +103,14 @@
     </main>
 
     <script>
-        // 🚨 1. แก้ไขตรงนี้: วาง URL เว็บแอปที่ได้จากการ Deploy ใน Google Apps Script ของคุณ
+        // 🚨 อย่าลืมตรวจสอบความถูกต้องของ URL หลังจากการ Deploy บน Apps Script อีกครั้ง
         const API_URL = "https://script.google.com/macros/s/AKfycbwfiADvA26XwL6-ld2mP-DoDc27xc6aCiwqa5wpaTDfoXuxpi1Kx8wwoL6O-tRW4lTA/exec"; 
 
-        // โหลดข้อมูลแสดงผลทันทีที่เปิดหน้าเว็บ
         document.addEventListener("DOMContentLoaded", () => {
             fetchAlerts();
             fetchSummary();
         });
 
-        // 🟢 ฟังก์ชันส่งฟอร์มข้อมูลตรวจเช็คไปบันทึกหลังบ้าน (POST)
         document.getElementById("inspectionForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             
@@ -132,7 +130,7 @@
                 const response = await fetch(API_URL, {
                     method: "POST",
                     mode: "cors",
-                    headers: { "Content-Type": "text/plain" }, // ดักจับปัญหา CORS บน Apps Script
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify(payload)
                 });
                 
@@ -140,7 +138,6 @@
                 if (result.status === "success") {
                     alert("🎉 " + result.message);
                     document.getElementById("inspectionForm").reset();
-                    // รีโหลดตารางข้อมูลใหม่ให้เป็นปัจจุบัน
                     fetchAlerts();
                     fetchSummary();
                 } else {
@@ -152,7 +149,6 @@
             }
         });
 
-        // 🔵 ฟังก์ชันดึงรายงานแจ้งเตือนวันหมดอายุ (GET Alerts)
         async function fetchAlerts() {
             const tbody = document.getElementById("alertTableBody");
             try {
@@ -178,7 +174,6 @@
             }
         }
 
-        // 🔵 ฟังก์ชันดึงตารางสรุปยอดคงเหลือปัจจุบันรายตู้ (GET Summary)
         async function fetchSummary() {
             const tbody = document.getElementById("summaryTableBody");
             try {
@@ -189,10 +184,10 @@
                     tbody.innerHTML = result.data.map(item => `
                         <tr class="hover:bg-slate-50">
                             <td class="p-3 font-medium">${item.ward || '-'}</td>
-                            <td class="p-3 text-slate-700">${item.drugId || '-'}</td>
-                            <td class="p-3 text-slate-500">${item.lotNumber || '-'}</td>
-                            <td class="p-3 text-center font-bold">${item.totalQty || 0}</td>
-                            <td class="p-3 text-center">${item.isCritical === 1 ? '🔴 วิกฤต/หมดอายุ' : '✅ ปกติ'}</td>
+                            <td class="p-3 text-slate-700">${item.drugid || item.drugId || '-'}</td>
+                            <td class="p-3 text-slate-500">${item.lotnumber || item.lotNumber || '-'}</td>
+                            <td class="p-3 text-center font-bold">${item.totalqty || item.totalQty || 0}</td>
+                            <td class="p-3 text-center">${(item.iscritical === 1 || item.isCritical === 1) ? '🔴 วิกฤต/หมดอายุ' : '✅ ปกติ'}</td>
                         </tr>
                     `).join('');
                 } else {
@@ -205,4 +200,3 @@
     </script>
 </body>
 </html>
- 
